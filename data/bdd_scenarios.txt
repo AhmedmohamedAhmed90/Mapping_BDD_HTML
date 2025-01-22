@@ -1,0 +1,22 @@
+Scenario: User Login
+  Given the user is on the login page
+  When the user enters "username" in the username field
+  And the user enters "password" in the password field
+  And clicks the login button
+  Then the user should be redirected to the dashboard
+
+Scenario: Admin Login
+  Given the admin is on the admin login page
+  When the admin enters "ahmed" in the username field
+  And the admin enters "1234" in the password field
+  And clicks the login button
+  Then the admin should see the admin dashboard
+
+Scenario: User Add Product to Cart
+  Given the user is on the product page for "Product A"
+  When the user selects the size "Medium" from the size dropdown
+  And the user selects the color "Blue" from the color options
+  And the user enters the quantity "2" in the quantity field
+  And the user clicks the "Add to Cart" button
+  Then the product "Product A" with size "Medium", color "Blue", and quantity "2" should be added to the cart
+  And the cart total should be updated to "$20.00"

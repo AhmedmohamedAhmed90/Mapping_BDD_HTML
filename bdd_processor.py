@@ -92,46 +92,38 @@
 
 from shared import tokenizer, model
 import torch
-from sklearn.cluster import DBSCAN
+from sklearn.cluster import AgglomerativeClustering
 import numpy as np
 from transformers import pipeline
 from sklearn.preprocessing import normalize
 
 def process_bdd(file_path):
     """
-    Process BDD scenarios from a file and generate embeddings and semantic descriptions.
+    Process a single BDD scenario from a file and generate embeddings and semantic descriptions.
     """
-    with open(file_path, "r") as file:
-        bdd_scenarios = file.read().split("Scenario:")[1:]  # Split by "Scenario:"
-    
-    # Load summarization model for generating semantic descriptions
+    # Initialize summarizer
+    summarizer = None
     try:
         summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
     except Exception as e:
         print(f"Failed to load summarization model: {e}")
-        summarizer = None  # Fallback to no summarization
 
-    # Process BDD scenarios
-    parsed_scenarios = []
-    for scenario in bdd_scenarios:
-        scenario = scenario.strip()
-        embedding = get_embedding(scenario)  # Generate embedding for the scenario
-        description = generate_semantic_description(scenario, summarizer) if summarizer else "No description available"
-        parsed_scenarios.append({
-            "scenario": scenario,
-            "embedding": embedding,
-            "description": description
-        })
-    
-    # Cluster BDD scenarios into contexts
-    bdd_embeddings = [scenario["embedding"].numpy() for scenario in parsed_scenarios]
-    bdd_embeddings = np.vstack(bdd_embeddings)  # Stack embeddings into a 2D array
-    bdd_embeddings = normalize(bdd_embeddings)  # Normalize embeddings
-    clusters = cluster_contexts(bdd_embeddings)  # Use DBSCAN for clustering
-    for i, scenario in enumerate(parsed_scenarios):
-        scenario["context_cluster"] = clusters[i]
-    
-    return parsed_scenarios
+    # Read the entire file as a single scenario
+    with open(file_path, "r") as file:
+        scenario = file.read().strip()
+
+    # Generate embedding for the scenario
+    embedding = get_embedding(scenario)
+
+    # Generate semantic description for the scenario
+    description = generate_semantic_description(scenario, summarizer) if summarizer else "No description available"
+
+    # Return the processed scenario
+    return {
+        "scenario": scenario,
+        "embedding": embedding,
+        "description": description
+    }
 
 def get_embedding(text):
     """
@@ -154,11 +146,3 @@ def generate_semantic_description(text, summarizer):
         return description
     else:
         return "No description available"
-
-def cluster_contexts(embeddings):
-    """
-    Cluster embeddings into contexts using DBSCAN.
-    """
-    dbscan = DBSCAN(eps=0.5, min_samples=2)  # Adjust eps and min_samples as needed
-    clusters = dbscan.fit_predict(embeddings)
-    return clusters
